@@ -8,7 +8,7 @@ overrides:
       slackNotificationChannel: alpha-monitoring
       games:
         alpha-game-1:
-          image: registry.example/math-model:alpha-game-1-41650005093
+          image: registry.example/math-model:alpha-game-1-41681344080
           replicas: 1
         alpha-game-2:
           image: registry.example/math-model:alpha-game-2-41681344080
