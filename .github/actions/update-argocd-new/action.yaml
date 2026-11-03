@@ -1,0 +1,23 @@
+name: Update ArgoCD (new method)
+description: Edits one game's image and replicas on a snapshot of main, commits on that snapshot, and merges it through a release PR
+
+inputs:
+  token: { required: true }
+  repository: { required: true, description: "owner/name of the values repository" }
+  game-name: { required: true }
+  studio: { required: true }
+  image-url: { required: true }
+  env-name: { required: true }
+  replicas: { required: true }
+  values-file-path: { required: true }
+  values-yaml-prefix: { required: true }
+  branch-suffix: { required: true, description: "Makes the release branch unique, e.g. the caller's commit sha" }
+  max-attempts: { required: false, default: "10" }
+
+outputs:
+  pr-url: { description: "The merged release PR, empty when the values were already up to date" }
+  merged-sha: { description: "The squash commit on main" }
+
+runs:
+  using: node24
+  main: update-argocd.ts

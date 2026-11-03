@@ -1,0 +1,103 @@
+name: Race
+on:
+  workflow_dispatch:
+    inputs:
+      method:
+        type: choice
+        options: [old, new]
+        default: new
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  VALUES_FILE: gitops/targets/cluster-dev/math-models.yaml
+  PREFIX: overrides.studio_math_models
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.snapshot.outputs.sha }}
+      legs: ${{ steps.snapshot.outputs.legs }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "sha=$(gh api repos/${{ github.repository }}/git/ref/heads/main -q .object.sha)" >> "$GITHUB_OUTPUT"
+          echo "legs=$(jq -c . race-games.json)" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy ${{ matrix.game }} (${{ inputs.method }})
+    needs: [snapshot]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.snapshot.outputs.legs) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: .github/
+
+      - if: inputs.method == 'old'
+        uses: ./.github/actions/update-argocd-old
+        with:
+          token: ${{ github.token }}
+          game-name: ${{ matrix.game }}
+          studio: ${{ matrix.studio }}
+          image-url: registry.example/math-model:${{ matrix.game }}-${{ github.run_id }}
+          env-name: dev
+          replicas: "1"
+          values-file-path: ${{ env.VALUES_FILE }}
+          values-yaml-prefix: ${{ env.PREFIX }}
+
+      - if: inputs.method == 'new'
+        uses: ./.github/actions/update-argocd-new
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          game-name: ${{ matrix.game }}
+          studio: ${{ matrix.studio }}
+          image-url: registry.example/math-model:${{ matrix.game }}-${{ github.run_id }}
+          env-name: dev
+          replicas: "1"
+          values-file-path: ${{ env.VALUES_FILE }}
+          values-yaml-prefix: ${{ env.PREFIX }}
+          branch-suffix: ${{ github.run_id }}
+
+  verify:
+    needs: [snapshot, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          LEGS: ${{ needs.snapshot.outputs.legs }}
+          BEFORE: ${{ needs.snapshot.outputs.sha }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          get() { gh api "repos/${{ github.repository }}/contents/$VALUES_FILE?ref=$1" -q .content | base64 -d; }
+          get "$BEFORE" > before.yaml
+          get main > after.yaml
+          G=".${PREFIX}"
+          # every deployed game must carry this run's image, every other value must be untouched
+          lost=0
+          for row in $(jq -r '.[] | "\(.studio)/\(.game)"' <<<"$LEGS"); do
+            studio=${row%%/*}; game=${row#*/}
+            want="registry.example/math-model:${game}-${RUN_ID}"
+            got=$(yq -r "${G}[\"${studio}\"].games[\"${game}\"].image" after.yaml)
+            if [ "$got" = "$want" ]; then echo "ok        $row"; else echo "CLOBBERED $row (main has $got)"; lost=$((lost+1)); fi
+          done
+          dels=$(jq -r --arg g "$G" '[.[] | "\($g)[\"\(.studio)\"].games[\"\(.game)\"]"] | map("del(" + . + ")") | join(" | ")' <<<"$LEGS")
+          if [ "$(yq -o=json -I=0 "$dels" before.yaml)" = "$(yq -o=json -I=0 "$dels" after.yaml)" ]; then
+            echo "untouched entries: unchanged"
+          else
+            echo "::error::entries outside this run's games changed"; lost=$((lost+1))
+          fi
+          echo "deploys lost: $lost"
+          echo "### ${{ inputs.method }} method: $lost of $(jq length <<<"$LEGS") deploys lost" >> "$GITHUB_STEP_SUMMARY"
+          [ "$lost" -eq 0 ]

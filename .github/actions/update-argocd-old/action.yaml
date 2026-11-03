@@ -1,0 +1,65 @@
+# Today's gse-game-deployables update-argocd, adapted to run against this repo with GITHUB_TOKEN:
+# no GitHub App token, no wretry wrapper, and no --admin on merge (nothing here is branch-protected).
+name: Update ArgoCD (old method)
+description: yaml-update-action edits the checked-out file and commits it through the API onto the latest main
+
+inputs:
+  token: { required: true }
+  game-name: { required: true }
+  studio: { required: true }
+  image-url: { required: true }
+  env-name: { required: true }
+  replicas: { required: true }
+  values-file-path: { required: true }
+  values-yaml-prefix: { required: true }
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout values repository
+      uses: actions/checkout@v6
+      with:
+        ref: main
+        token: ${{ inputs.token }}
+
+    - name: Update Math model image
+      uses: fjogeleit/yaml-update-action@main
+      id: update-math-model
+      with:
+        valueFile: ${{ inputs.values-file-path }}
+        changes: |
+          {
+            "${{ inputs.values-yaml-prefix }}['${{ inputs.studio }}'].games['${{ inputs.game-name }}'].image": "${{ inputs.image-url }}",
+            "${{ inputs.values-yaml-prefix }}['${{ inputs.studio }}'].games['${{ inputs.game-name }}'].replicas": ${{ inputs.replicas }}
+          }
+        masterBranchName: main
+        targetBranch: main
+        branch: release/${{ inputs.env-name }}/${{ inputs.studio }}-${{ inputs.game-name }}/${{ github.run_id }}
+        commitChange: true
+        createPR: true
+        repository: ${{ github.repository }}
+        title: "ci: release: ${{ inputs.studio }}-${{ inputs.game-name }} ${{ inputs.env-name }}"
+        message: "ci: release: ${{ inputs.studio }}-${{ inputs.game-name }} ${{ inputs.env-name }}"
+        token: ${{ inputs.token }}
+
+    - name: Merge release PR
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        PULL_REQUEST: ${{ steps.update-math-model.outputs.pull_request }}
+      run: |
+        PR_URL=$(jq -r '.html_url // empty' <<<"$PULL_REQUEST")
+        if [ -z "$PR_URL" ]; then echo "No PR created"; exit 0; fi
+        for attempt in $(seq 1 10); do
+          gh pr update-branch "$PR_URL" || true
+          sleep 2
+          if gh pr merge --squash "$PR_URL"; then
+            echo "PR merged successfully on attempt ${attempt}"
+            exit 0
+          fi
+          BACKOFF=$(( 2 ** attempt + RANDOM % (2 ** attempt) ))
+          echo "Merge failed on attempt ${attempt}, retrying in ${BACKOFF}s..."
+          sleep $BACKOFF
+        done
+        echo "::error::Failed to merge release PR after 10 attempts"
+        exit 1

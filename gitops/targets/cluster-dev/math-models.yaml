@@ -1,0 +1,87 @@
+istioInjection: enabled
+overrides:
+  envPrefix: test-dev
+  imagePullSecrets: []
+  environment: dev
+  studio_math_models:
+    alpha:
+      slackNotificationChannel: alpha-monitoring
+      games:
+        alpha-game-1:
+          image: registry.example/math-model:alpha-game-1-initial
+          replicas: 1
+        alpha-game-2:
+          image: registry.example/math-model:alpha-game-2-initial
+          replicas: 1
+        alpha-game-3:
+          image: registry.example/math-model:alpha-game-3-initial
+          replicas: 1
+        alpha-game-4:
+          image: registry.example/math-model:alpha-game-4-initial
+          replicas: 1
+        alpha-game-5:
+          image: registry.example/math-model:alpha-game-5-initial
+          replicas: 1
+        alpha-game-6:
+          image: registry.example/math-model:alpha-game-6-initial
+          replicas: 1
+        alpha-game-7:
+          image: registry.example/math-model:alpha-game-7-initial
+          replicas: 1
+        alpha-game-8:
+          image: registry.example/math-model:alpha-game-8-initial
+          replicas: 1
+    bravo:
+      slackNotificationChannel: bravo-monitoring
+      games:
+        bravo-game-1:
+          image: registry.example/math-model:bravo-game-1-initial
+          replicas: 1
+        bravo-game-2:
+          image: registry.example/math-model:bravo-game-2-initial
+          replicas: 1
+        bravo-game-3:
+          image: registry.example/math-model:bravo-game-3-initial
+          replicas: 1
+        bravo-game-4:
+          image: registry.example/math-model:bravo-game-4-initial
+          replicas: 1
+        bravo-game-5:
+          image: registry.example/math-model:bravo-game-5-initial
+          replicas: 1
+        bravo-game-6:
+          image: registry.example/math-model:bravo-game-6-initial
+          replicas: 1
+        bravo-game-7:
+          image: registry.example/math-model:bravo-game-7-initial
+          replicas: 1
+        bravo-game-8:
+          image: registry.example/math-model:bravo-game-8-initial
+          replicas: 1
+    charlie-private:
+      slackNotificationChannel: charlie-private-monitoring
+      games:
+        charlie-private-game-1:
+          image: registry.example/math-model:charlie-private-game-1-initial
+          replicas: 1
+        charlie-private-game-2:
+          image: registry.example/math-model:charlie-private-game-2-initial
+          replicas: 1
+        charlie-private-game-3:
+          image: registry.example/math-model:charlie-private-game-3-initial
+          replicas: 1
+        charlie-private-game-4:
+          image: registry.example/math-model:charlie-private-game-4-initial
+          replicas: 1
+        charlie-private-game-5:
+          image: registry.example/math-model:charlie-private-game-5-initial
+          replicas: 1
+        charlie-private-game-6:
+          image: registry.example/math-model:charlie-private-game-6-initial
+          replicas: 1
+        charlie-private-game-7:
+          image: registry.example/math-model:charlie-private-game-7-initial
+          replicas: 1
+        charlie-private-game-8:
+          image: registry.example/math-model:charlie-private-game-8-initial
+          replicas: 1
