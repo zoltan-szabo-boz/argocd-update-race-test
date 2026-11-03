@@ -44,7 +44,7 @@ overrides:
           image: registry.example/math-model:bravo-game-3-41645041158
           replicas: 1
         bravo-game-4:
-          image: registry.example/math-model:bravo-game-4-41645041158
+          image: registry.example/math-model:bravo-game-4-41645545487
           replicas: 1
         bravo-game-5:
           image: registry.example/math-model:bravo-game-5-41645041158
