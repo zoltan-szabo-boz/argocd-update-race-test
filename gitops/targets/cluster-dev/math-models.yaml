@@ -14,7 +14,7 @@ overrides:
           image: registry.example/math-model:alpha-game-2-initial
           replicas: 1
         alpha-game-3:
-          image: registry.example/math-model:alpha-game-3-initial
+          image: registry.example/math-model:alpha-game-3-41645041158
           replicas: 1
         alpha-game-4:
           image: registry.example/math-model:alpha-game-4-initial
@@ -41,10 +41,10 @@ overrides:
           image: registry.example/math-model:bravo-game-2-initial
           replicas: 1
         bravo-game-3:
-          image: registry.example/math-model:bravo-game-3-initial
+          image: registry.example/math-model:bravo-game-3-41645041158
           replicas: 1
         bravo-game-4:
-          image: registry.example/math-model:bravo-game-4-initial
+          image: registry.example/math-model:bravo-game-4-41645041158
           replicas: 1
         bravo-game-5:
           image: registry.example/math-model:bravo-game-5-initial
@@ -71,10 +71,10 @@ overrides:
           image: registry.example/math-model:charlie-private-game-3-41645041158
           replicas: 1
         charlie-private-game-4:
-          image: registry.example/math-model:charlie-private-game-4-initial
+          image: registry.example/math-model:charlie-private-game-4-41645041158
           replicas: 1
         charlie-private-game-5:
-          image: registry.example/math-model:charlie-private-game-5-initial
+          image: registry.example/math-model:charlie-private-game-5-41645041158
           replicas: 1
         charlie-private-game-6:
           image: registry.example/math-model:charlie-private-game-6-initial
