@@ -104,7 +104,7 @@ overrides:
       slackNotificationChannel: charlie-private-monitoring
       games:
         charlie-private-game-1:
-          image: registry.example/math-model:charlie-private-game-1-41681344080
+          image: registry.example/math-model:charlie-private-game-1-41681866178
           replicas: 1
         charlie-private-game-2:
           image: registry.example/math-model:charlie-private-game-2-41681344080
