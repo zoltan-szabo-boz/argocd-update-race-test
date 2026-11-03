@@ -1,5 +1,5 @@
 # Today's gse-game-deployables update-argocd, adapted to run against this repo with GITHUB_TOKEN:
-# no GitHub App token, no wretry wrapper, and no --admin on merge (nothing here is branch-protected).
+# no GitHub App token and no --admin on merge (nothing here is branch-protected).
 name: Update ArgoCD (old method)
 description: yaml-update-action edits the checked-out file and commits it through the API onto the latest main
 
@@ -23,32 +23,38 @@ runs:
         token: ${{ inputs.token }}
 
     - name: Update Math model image
-      uses: fjogeleit/yaml-update-action@main
+      uses: Wandalen/wretry.action/main@v3.5.0
       id: update-math-model
       with:
-        valueFile: ${{ inputs.values-file-path }}
-        changes: |
-          {
-            "${{ inputs.values-yaml-prefix }}['${{ inputs.studio }}'].games['${{ inputs.game-name }}'].image": "${{ inputs.image-url }}",
-            "${{ inputs.values-yaml-prefix }}['${{ inputs.studio }}'].games['${{ inputs.game-name }}'].replicas": ${{ inputs.replicas }}
-          }
-        masterBranchName: main
-        targetBranch: main
-        branch: release/${{ inputs.env-name }}/${{ inputs.studio }}-${{ inputs.game-name }}/${{ github.run_id }}
-        commitChange: true
-        createPR: true
-        repository: ${{ github.repository }}
-        title: "ci: release: ${{ inputs.studio }}-${{ inputs.game-name }} ${{ inputs.env-name }}"
-        message: "ci: release: ${{ inputs.studio }}-${{ inputs.game-name }} ${{ inputs.env-name }}"
-        token: ${{ inputs.token }}
+        attempt_limit: 3
+        attempt_delay: 1000
+        steps_context: ${{ toJSON(steps) }}
+        action: fjogeleit/yaml-update-action@main
+        with: |
+          valueFile: ${{ inputs.values-file-path }}
+          changes: |
+            {
+              "${{ inputs.values-yaml-prefix }}['${{ inputs.studio }}'].games['${{ inputs.game-name }}'].image": "${{ inputs.image-url }}",
+              "${{ inputs.values-yaml-prefix }}['${{ inputs.studio }}'].games['${{ inputs.game-name }}'].replicas": ${{ inputs.replicas }}
+            }
+          masterBranchName: main
+          targetBranch: main
+          branch: release/${{ inputs.env-name }}/${{ inputs.studio }}-${{ inputs.game-name }}/${{ github.run_id }}
+          commitChange: true
+          createPR: true
+          repository: ${{ github.repository }}
+          title: "ci: release: ${{ inputs.studio }}-${{ inputs.game-name }} ${{ inputs.env-name }}"
+          message: "ci: release: ${{ inputs.studio }}-${{ inputs.game-name }} ${{ inputs.env-name }}"
+          token: ${{ inputs.token }}
 
     - name: Merge release PR
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
-        PULL_REQUEST: ${{ steps.update-math-model.outputs.pull_request }}
+        RAW_OUTPUTS: ${{ steps.update-math-model.outputs.outputs }}
       run: |
-        PR_URL=$(jq -r '.html_url // empty' <<<"$PULL_REQUEST")
+        # wretry nests the wrapped action's outputs, as update-argocd's validate-output.ts unpacks them
+        PR_URL=$(jq -r '.pull_request // empty | fromjson | .html_url // empty' <<<"$RAW_OUTPUTS")
         if [ -z "$PR_URL" ]; then echo "No PR created"; exit 0; fi
         for attempt in $(seq 1 10); do
           gh pr update-branch "$PR_URL" || true

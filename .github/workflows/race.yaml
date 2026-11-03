@@ -43,6 +43,11 @@ jobs:
         with:
           sparse-checkout: .github/
 
+      # Builds finish at different times in a real multi-model deploy, so releases overlap instead of all
+      # reading and committing main in the same second (which never produces a stale copy)
+      - name: Stagger like real builds
+        run: sleep $((RANDOM % 90))
+
       - if: inputs.method == 'old'
         uses: ./.github/actions/update-argocd-old
         with:
