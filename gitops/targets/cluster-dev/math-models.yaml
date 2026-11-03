@@ -17,10 +17,10 @@ overrides:
           image: registry.example/math-model:alpha-game-3-41645545487
           replicas: 1
         alpha-game-4:
-          image: registry.example/math-model:alpha-game-4-41645041158
+          image: registry.example/math-model:alpha-game-4-41645545487
           replicas: 1
         alpha-game-5:
-          image: registry.example/math-model:alpha-game-5-41645545487
+          image: registry.example/math-model:alpha-game-5-41645041158
           replicas: 1
         alpha-game-6:
           image: registry.example/math-model:alpha-game-6-initial
@@ -62,19 +62,19 @@ overrides:
       slackNotificationChannel: charlie-private-monitoring
       games:
         charlie-private-game-1:
-          image: registry.example/math-model:charlie-private-game-1-41645041158
+          image: registry.example/math-model:charlie-private-game-1-41645545487
           replicas: 1
         charlie-private-game-2:
-          image: registry.example/math-model:charlie-private-game-2-41645545487
+          image: registry.example/math-model:charlie-private-game-2-41645041158
           replicas: 1
         charlie-private-game-3:
           image: registry.example/math-model:charlie-private-game-3-41645041158
           replicas: 1
         charlie-private-game-4:
-          image: registry.example/math-model:charlie-private-game-4-41645041158
+          image: registry.example/math-model:charlie-private-game-4-41645545487
           replicas: 1
         charlie-private-game-5:
-          image: registry.example/math-model:charlie-private-game-5-41645041158
+          image: registry.example/math-model:charlie-private-game-5-41645545487
           replicas: 1
         charlie-private-game-6:
           image: registry.example/math-model:charlie-private-game-6-initial
