@@ -65,7 +65,7 @@ overrides:
           image: registry.example/math-model:charlie-private-game-1-initial
           replicas: 1
         charlie-private-game-2:
-          image: registry.example/math-model:charlie-private-game-2-initial
+          image: registry.example/math-model:charlie-private-game-2-41645041158
           replicas: 1
         charlie-private-game-3:
           image: registry.example/math-model:charlie-private-game-3-initial
