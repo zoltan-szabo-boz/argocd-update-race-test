@@ -1,0 +1,56 @@
+name: Update ArgoCD Math Model
+description: Updates a specified studios math-model by modifying the gitops repository `gap-kubernetes`, through a release PR it squash-merges.
+
+inputs:
+  token:
+    description: Test copy - this repo's GITHUB_TOKEN in place of the GitHub App token
+    required: true
+  game-name:
+    description: The name of the game being updated. E.g. imperial-koi, really-reely-rich, stampede-fury-2
+    required: true
+  studio:
+    description: The studio that the game belongs to. E.g gfs, pok, lds, reelplay.
+    required: true
+  image-url:
+    description: The URL of the docker image wanting to be deployed.
+    required: true
+  env-name:
+    description: The lowercase short-name of the environment, used in commit messages, release branch names, and PR titles/messages, so it should remain stable and meaningful.
+    required: true
+  replicas:
+    description: The number of replicas to be deployed in the specified environment. E.g 2.
+    required: true
+  values-file-path:
+    description: The path to the values yaml file that contains the game configuration. E.g helm/math-models/application/values.dev.yaml
+    required: true
+  values-yaml-prefix:
+    description: The prefix in the values yaml file that contains the game configuration. E.g studio_math_models.
+    required: true
+
+outputs:
+  pr-url:
+    description: The merged release PR, empty when main already had the image and replicas
+    value: ${{ steps.release.outputs.pr-url }}
+  merged-sha:
+    description: The squash commit on gap-kubernetes main
+    value: ${{ steps.release.outputs.merged-sha }}
+
+runs:
+  using: composite
+  steps:
+    # Builds the release commit on the exact main it edited, so concurrent releases from any studio
+    # three-way merge instead of reverting each other, and checks with yq that only this game changed
+    - name: Release the math model to gap-kubernetes
+      id: release
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        GAME_NAME: ${{ inputs.game-name }}
+        STUDIO: ${{ inputs.studio }}
+        IMAGE_URL: ${{ inputs.image-url }}
+        ENV_NAME: ${{ inputs.env-name }}
+        REPLICAS: ${{ inputs.replicas }}
+        VALUES_FILE_PATH: ${{ inputs.values-file-path }}
+        VALUES_YAML_PREFIX: ${{ inputs.values-yaml-prefix }}
+        BRANCH_SUFFIX: ${{ github.run_id }}
+      run: node "$GITHUB_ACTION_PATH/update-argocd.ts"

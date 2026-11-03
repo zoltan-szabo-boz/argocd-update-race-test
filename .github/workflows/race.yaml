@@ -4,7 +4,7 @@ on:
     inputs:
       method:
         type: choice
-        options: [old, new]
+        options: [old, new, ported]
         default: new
 
 permissions:
@@ -75,6 +75,21 @@ jobs:
           values-file-path: ${{ env.VALUES_FILE }}
           values-yaml-prefix: ${{ env.PREFIX }}
           branch-suffix: ${{ github.run_id }}
+
+      - if: inputs.method == 'ported'
+        uses: ./.github/actions/update-argocd-ported
+        with:
+          token: ${{ github.token }}
+          game-name: ${{ matrix.game }}
+          studio: ${{ matrix.studio }}
+          image-url: registry.example/math-model:${{ matrix.game }}-${{ github.run_id }}
+          env-name: dev
+          replicas: "1"
+          values-file-path: ${{ env.VALUES_FILE }}
+          values-yaml-prefix: ${{ env.PREFIX }}
+
+      - if: inputs.method == 'ported'
+        run: node --version
 
   verify:
     needs: [snapshot, deploy]
