@@ -31,6 +31,9 @@ overrides:
         alpha-game-8:
           image: registry.example/math-model:alpha-game-8-initial
           replicas: 1
+        alpha-new-41649034250-3:
+          image: registry.example/math-model:alpha-new-41649034250-3-41649034250
+          replicas: 1
     bravo:
       slackNotificationChannel: bravo-monitoring
       games:
