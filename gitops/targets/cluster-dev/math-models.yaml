@@ -70,6 +70,9 @@ overrides:
         alpha-new-41681866178-2:
           image: registry.example/math-model:alpha-new-41681866178-2-41681866178
           replicas: 1
+        alpha-new-41681866178-3:
+          image: registry.example/math-model:alpha-new-41681866178-3-41681866178
+          replicas: 1
     bravo:
       slackNotificationChannel: bravo-monitoring
       games:
