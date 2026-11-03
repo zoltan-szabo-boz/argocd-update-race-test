@@ -95,7 +95,10 @@ jobs:
             studio=${row%%/*}; game=${row#*/}
             want="registry.example/math-model:${game}-${RUN_ID}"
             got=$(yq -r "${G}[\"${studio}\"].games[\"${game}\"].image" after.yaml)
-            if [ "$got" = "$want" ]; then echo "ok        $row"; else echo "CLOBBERED $row (main has $got)"; lost=$((lost+1)); fi
+            job=$(gh api --paginate "repos/${{ github.repository }}/actions/runs/$RUN_ID/jobs?per_page=100" -q ".jobs[] | select(.name | startswith(\"Deploy ${game} \")) | .conclusion")
+            if [ "$got" = "$want" ]; then echo "ok        $row"
+            elif [ "$job" = "success" ]; then echo "CLOBBERED $row (job passed, main has $got)"; lost=$((lost+1))
+            else echo "FAILED    $row (job $job, main has $got)"; lost=$((lost+1)); fi
           done
           dels=$(jq -r --arg g "$G" '[.[] | "\($g)[\"\(.studio)\"].games[\"\(.game)\"]"] | map("del(" + . + ")") | join(" | ")' <<<"$LEGS")
           if [ "$(yq -o=json -I=0 "$dels" before.yaml)" = "$(yq -o=json -I=0 "$dels" after.yaml)" ]; then

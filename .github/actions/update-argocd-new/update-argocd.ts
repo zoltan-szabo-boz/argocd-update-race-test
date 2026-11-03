@@ -168,6 +168,8 @@ async function ok(api: Api, method: string, url: string, body?: unknown): Promis
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// Jittered so releases that collided once do not collide again in lockstep
+const backoff = (attempt: number): number => 1000 * (1 + Math.random() * 2 ** Math.min(attempt, 4));
 
 export interface Release {
   api: Api;
@@ -224,24 +226,44 @@ export async function release(release: Release): Promise<{ prUrl: string; merged
     await pointBranch(release, branch, commit.sha);
     const pr = await openPullRequest(release, branch, title);
 
-    // sha pins the merge to the commit built above, so a branch moved by anything else is never merged
-    const merge = await api("PUT", `/repos/${repository}/pulls/${pr.number}/merge`, {
-      merge_method: "squash",
-      sha: commit.sha,
-      commit_title: `${title} (#${pr.number})`,
-    });
-    if (merge.status === 200 && merge.data?.merged) {
-      await verifyMerge(release, merge.data.sha);
-      console.log(`Merged ${pr.html_url} as ${merge.data.sha} on attempt ${attempt} (edited from main ${base})`);
-      return { prUrl: pr.html_url, mergedSha: merge.data.sha };
+    // GitHub recomputes mergeability whenever the head moves and refuses to merge until it has; merging
+    // straight after a push therefore fails as "not mergeable" even when the change merges cleanly
+    for (let merges = 1; merges <= release.maxAttempts; merges++) {
+      const mergeable = await waitForMergeability(release, pr.number, commit.sha);
+      if (mergeable === "conflict") break;
+
+      // sha pins the merge to the commit built above, so a branch moved by anything else is never merged
+      const merge = await api("PUT", `/repos/${repository}/pulls/${pr.number}/merge`, {
+        merge_method: "squash",
+        sha: commit.sha,
+        commit_title: `${title} (#${pr.number})`,
+      });
+      if (merge.status === 200 && merge.data?.merged) {
+        await verifyMerge(release, merge.data.sha);
+        console.log(`Merged ${pr.html_url} as ${merge.data.sha} (built on main ${base}, attempt ${attempt}, merge ${merges})`);
+        return { prUrl: pr.html_url, mergedSha: merge.data.sha };
+      }
+      // Usually another release merged in between ("Base branch was modified"): the commit is still a clean
+      // three-way merge onto the new main, so it is retried as is
+      console.log(`Merge ${merges}: ${merge.status} (${merge.data?.message ?? ""}), retrying`);
+      await sleep(backoff(merges));
     }
 
-    // Rebuild from the latest main rather than retrying the old commit, so a retry never carries stale content
-    const backoff = 1000 * (2 ** Math.min(attempt, 5) + Math.random() * 2 ** Math.min(attempt, 5));
-    console.log(`Attempt ${attempt}: merge returned ${merge.status} (${merge.data?.message ?? ""}), rebuilding from the latest main in ${Math.round(backoff / 1000)}s`);
-    await sleep(backoff);
+    // Only a real conflict (another release of the same game, say) needs the edit redone on the latest main
+    console.log(`Attempt ${attempt}: ${pr.html_url} conflicts with main, rebuilding from the latest main`);
+    await sleep(backoff(attempt));
   }
   throw new Error(`could not merge the ${name} release after ${release.maxAttempts} attempts`);
+}
+
+async function waitForMergeability(release: Release, prNumber: number, headSha: string): Promise<"mergeable" | "conflict"> {
+  for (let poll = 0; poll < 60; poll++) {
+    const pr = await ok(release.api, "GET", `/repos/${release.repository}/pulls/${prNumber}`);
+    if (pr.head.sha === headSha && pr.mergeable === true) return "mergeable";
+    if (pr.head.sha === headSha && pr.mergeable === false) return "conflict";
+    await sleep(2000);
+  }
+  throw new Error(`GitHub did not compute mergeability of #${prNumber} within 2 minutes`);
 }
 
 // The squash commit GitHub produced must itself change only this game, or this release reverted someone
