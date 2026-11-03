@@ -28,7 +28,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           echo "sha=$(gh api repos/${{ github.repository }}/git/ref/heads/main -q .object.sha)" >> "$GITHUB_OUTPUT"
-          echo "legs=$(jq -c . race-games.json)" >> "$GITHUB_OUTPUT"
+          # Plus three first deploys into one studio: they insert at the same spot, so they really conflict
+          # and exercise the rebuild-from-latest-main path
+          echo "legs=$(jq -c --arg run "$GITHUB_RUN_ID" '. + [range(1; 4) as $i | {studio: "alpha", game: "alpha-new-\($run)-\($i)"}]' race-games.json)" >> "$GITHUB_OUTPUT"
 
   deploy:
     name: Deploy ${{ matrix.game }} (${{ inputs.method }})
