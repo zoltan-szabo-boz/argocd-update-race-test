@@ -14,7 +14,7 @@ overrides:
           image: registry.example/math-model:alpha-game-2-initial
           replicas: 1
         alpha-game-3:
-          image: registry.example/math-model:alpha-game-3-41645041158
+          image: registry.example/math-model:alpha-game-3-41645545487
           replicas: 1
         alpha-game-4:
           image: registry.example/math-model:alpha-game-4-41645041158
